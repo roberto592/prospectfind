@@ -5,35 +5,17 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 import streamlit as st
+from pathlib import Path
+import os
 
 # ========================
 # Brand + Visual Settings
 # ========================
-from pathlib import Path
-import os
+APP_TITLE = "Prospect Scraper"
+APP_TAGLINE = "Find guest-post & contributor targets fast"
 
 BASE_DIR = Path(__file__).resolve().parent
 LOGO_PATH = BASE_DIR / "assets" / "logo.png"
-
-# Debug (you can remove after it works)
-st.write("Logo path:", str(LOGO_PATH))
-st.write("Logo exists:", os.path.exists(LOGO_PATH))
-
-# Try robust load methods
-try:
-    # 1) Raw bytes (works even if PIL has issues)
-    data = LOGO_PATH.read_bytes()
-    st.image(data, use_container_width=True)
-except Exception as e:
-    st.error(f"Raw-bytes logo load failed: {e}")
-    try:
-        # 2) Pillow fallback (if available)
-        from PIL import Image
-        img = Image.open(str(LOGO_PATH))
-        st.image(img, use_container_width=True)
-    except Exception as e2:
-        st.error(f"Pillow logo load failed: {e2}")
-
 
 USER_AGENT = "ProspectScraper/0.6 (+contact: your-email@example.com)"
 EMAIL_REGEX = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.I)
@@ -49,12 +31,46 @@ DEFAULT_EXCLUDES = (
 DEFAULT_INCLUDES = "guest post,write for us,submit an article,contribute"
 
 # ===============
+# Page & theming
+# ===============
+st.set_page_config(page_title=APP_TITLE, page_icon="🔎", layout="wide")
+
+# Hide Streamlit default menu/footer for a cleaner, app-like feel
+st.markdown(
+    """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .block-container {padding-top: 2rem; padding-bottom: 3rem;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ===== Header (logo + title) =====
+col_logo, col_title = st.columns([1, 5], vertical_alignment="center")
+with col_logo:
+    try:
+        data = LOGO_PATH.read_bytes()
+        try:
+            # Newer Streamlit
+            st.image(data, use_container_width=True)
+        except TypeError:
+            # Older Streamlit fallback
+            st.image(data, use_column_width=True)
+    except Exception:
+        st.caption(" ")  # no logo yet
+
+with col_title:
+    st.title(f"🔎 {APP_TITLE}")
+    st.caption(APP_TAGLINE)
+
+# ===============
 # Core utilities
 # ===============
 
 def extract_emails(text):
     return sorted({m.group(0) for m in EMAIL_REGEX.finditer(text)})
-
 
 def extract_domain(url):
     try:
@@ -64,14 +80,12 @@ def extract_domain(url):
     except Exception:
         return ""
 
-
 def domain_allowed(domain: str, allowed_tlds_only: bool) -> bool:
     if not domain:
         return False
     if allowed_tlds_only:
         return domain.endswith(".com") or domain.endswith(".org")
     return True
-
 
 def serpapi_search(query, api_key, num=10, start=0):
     endpoint = "https://serpapi.com/search.json"
@@ -98,7 +112,6 @@ def serpapi_search(query, api_key, num=10, start=0):
         })
     return out
 
-
 def fetch_html(url):
     try:
         r = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=20)
@@ -108,7 +121,6 @@ def fetch_html(url):
     except Exception:
         return ""
 
-
 def extract_links(soup, base_url):
     links = []
     for a in soup.find_all("a", href=True):
@@ -117,7 +129,6 @@ def extract_links(soup, base_url):
         links.append((txt, full))
     return links
 
-
 def find_candidate_contact_links(links):
     seen, out = set(), []
     for txt, url in links:
@@ -125,7 +136,6 @@ def find_candidate_contact_links(links):
             if url not in seen:
                 out.append(url); seen.add(url)
     return out[:10]
-
 
 def search_queries(niche):
     b = niche.strip()
@@ -137,48 +147,14 @@ def search_queries(niche):
         f'"editorial guidelines" {b}',
     ]
 
-
 def parse_csv_list(s: str):
     return [t.strip().lower() for t in s.split(",") if t.strip()]
-
 
 def matches_include_keywords(rec, include_terms):
     if not include_terms:
         return True
     hay = " ".join([rec.get("title",""), rec.get("url",""), rec.get("snippet","")]).lower()
     return any(term in hay for term in include_terms)
-
-# ===============
-# Page & theming
-# ===============
-
-st.set_page_config(page_title=APP_TITLE, page_icon="🔎", layout="wide")
-
-# Hide Streamlit default menu/footer for a cleaner, app-like feel
-st.markdown(
-    """
-    <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .block-container {padding-top: 2rem; padding-bottom: 3rem;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Top bar with logo + title
-col_logo, col_title = st.columns([1, 5], vertical_alignment="center")
-with col_logo:
-    try:
-        import os
-        st.write("Logo path:", str(LOGO_PATH))
-        st.write("Logo exists:", os.path.exists(LOGO_PATH))
-        st.image(str(LOGO_PATH), use_container_width=True)
-    except Exception:
-        st.write(" ")  # no logo yet
-with col_title:
-    st.title(f"🔎 {APP_TITLE}")
-    st.caption(APP_TAGLINE)
 
 # ===============
 # Sidebar (minimal by default)
@@ -339,10 +315,19 @@ if run:
         writer.writeheader()
         for r in rows:
             writer.writerow(r)
-        st.download_button(
-            "Download CSV",
-            output.getvalue().encode("utf-8"),
-            file_name="prospects.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
+        try:
+            st.download_button(
+                "Download CSV",
+                output.getvalue().encode("utf-8"),
+                file_name="prospects.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
+        except TypeError:
+            # Older Streamlit
+            st.download_button(
+                "Download CSV",
+                output.getvalue().encode("utf-8"),
+                file_name="prospects.csv",
+                mime="text/csv",
+            )
