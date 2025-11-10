@@ -11,7 +11,7 @@ import os
 # ========================
 # Brand + Visual Settings
 # ========================
-APP_TITLE = "Prospect Scraper"
+APP_TITLE = "Sure Oak's Prospect Finder"
 APP_TAGLINE = "Find guest-post & contributor targets fast"
 
 BASE_DIR = Path(__file__).resolve().parent
