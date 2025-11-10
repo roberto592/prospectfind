@@ -153,6 +153,9 @@ st.markdown(
 col_logo, col_title = st.columns([1, 5], vertical_alignment="center")
 with col_logo:
     try:
+        import os
+        st.write("Logo path:", str(LOGO_PATH))
+        st.write("Logo exists:", os.path.exists(LOGO_PATH))
         st.image(str(LOGO_PATH), use_container_width=True)
     except Exception:
         st.write(" ")  # no logo yet
