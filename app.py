@@ -12,7 +12,7 @@ import os
 # Brand + Visual Settings
 # ========================
 APP_TITLE = "Sure Oak's Prospect Finder"
-APP_TAGLINE = "Find guest-post & contributor targets fast"
+APP_TAGLINE = "Find guest-post & contributor targets fast(ish)"
 
 BASE_DIR = Path(__file__).resolve().parent
 LOGO_PATH = BASE_DIR / "assets" / "logo.png"
