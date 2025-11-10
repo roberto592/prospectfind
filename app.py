@@ -9,9 +9,14 @@ import streamlit as st
 # ========================
 # Brand + Visual Settings
 # ========================
-APP_TITLE = "Prospect Finder"
+from pathlib import Path
+
+# Brand + Visual Settings
+APP_TITLE = "Prospect Scraper"
 APP_TAGLINE = "Find guest-post & contributor targets fast"
-LOGO_PATH = "assets/logo.png"   # Company logo
+BASE_DIR = Path(__file__).resolve().parent
+LOGO_PATH = BASE_DIR / "assets" / "logo.png"
+
 
 USER_AGENT = "ProspectScraper/0.6 (+contact: your-email@example.com)"
 EMAIL_REGEX = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.I)
@@ -148,7 +153,7 @@ st.markdown(
 col_logo, col_title = st.columns([1, 5], vertical_alignment="center")
 with col_logo:
     try:
-        st.image(LOGO_PATH, use_container_width=True)
+        st.image(str(LOGO_PATH), use_container_width=True)
     except Exception:
         st.write(" ")  # no logo yet
 with col_title:
