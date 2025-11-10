@@ -10,12 +10,29 @@ import streamlit as st
 # Brand + Visual Settings
 # ========================
 from pathlib import Path
+import os
 
-# Brand + Visual Settings
-APP_TITLE = "Prospect Scraper"
-APP_TAGLINE = "Find guest-post & contributor targets fast"
 BASE_DIR = Path(__file__).resolve().parent
 LOGO_PATH = BASE_DIR / "assets" / "logo.png"
+
+# Debug (you can remove after it works)
+st.write("Logo path:", str(LOGO_PATH))
+st.write("Logo exists:", os.path.exists(LOGO_PATH))
+
+# Try robust load methods
+try:
+    # 1) Raw bytes (works even if PIL has issues)
+    data = LOGO_PATH.read_bytes()
+    st.image(data, use_container_width=True)
+except Exception as e:
+    st.error(f"Raw-bytes logo load failed: {e}")
+    try:
+        # 2) Pillow fallback (if available)
+        from PIL import Image
+        img = Image.open(str(LOGO_PATH))
+        st.image(img, use_container_width=True)
+    except Exception as e2:
+        st.error(f"Pillow logo load failed: {e2}")
 
 
 USER_AGENT = "ProspectScraper/0.6 (+contact: your-email@example.com)"
